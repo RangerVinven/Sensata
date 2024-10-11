@@ -5,7 +5,7 @@ A university group project where we put various sensors around the university, a
 Credits:
 - Lloyd Barclay
 - Karsten Hunstad
-- Daniel
+- Daniel?!
 - Michal Lazovy
 - Daniel McPherson
 - Artjom RodionoV
