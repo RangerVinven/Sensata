@@ -1,0 +1,155 @@
+Based on the database schema you provided, here are the SQL queries for each of the potential API routes from `api_routes.txt`.
+
+### 1. **List API Keys (User Route)**
+```sql
+SELECT api_key_id, created_at, expires_at, permission_level, is_active
+FROM public.api_keys
+WHERE user_id_user = $1; -- $1 is the placeholder for user_id
+```
+
+### 2. **Create API Key (Admin Route)**
+```sql
+INSERT INTO public.api_keys (user_id_user, created_at, expires_at, permission_level, is_active)
+VALUES ($1, NOW(), $2, $3, true) -- $1: user_id, $2: expiration timestamp, $3: permission level
+RETURNING api_key_id;
+```
+
+### 3. **List Users (Admin Route)**
+```sql
+SELECT user_id, email_address, is_activated, is_admin
+FROM public."user";
+```
+
+### 4. **List Sessions (User and Admin Route)**
+```sql
+SELECT session_id, created_at, last_used, last_ip
+FROM public.user_sessions
+WHERE user_id_user = $1; -- $1 is the placeholder for user_id
+```
+
+### 5. **List Groups**
+```sql
+SELECT group_id, name, description
+FROM public.sensor_groups;
+```
+
+### 6. **List Sensors**
+```sql
+SELECT sensor_id, manufacturer, serial_number, model_name
+FROM public.sensor_table;
+```
+
+### 7. **Get Data (Various Options)**
+#### a. Latest 50 Data Points
+```sql
+SELECT sensor_data_id, data, sensor_id_sensor_table
+FROM public.sensor_data
+ORDER BY sensor_data_id DESC
+LIMIT 50;
+```
+#### b. Data Range (Since API Key Created)
+```sql
+SELECT sd.sensor_data_id, sd.data, sd.sensor_id_sensor_table
+FROM public.sensor_data sd
+JOIN public.api_keys ak ON ak.user_id_user = $1
+WHERE sd.sensor_data_id >= (
+    SELECT MIN(sensor_data_id)
+    FROM public.sensor_data
+    WHERE created_at >= ak.created_at
+)
+ORDER BY sd.sensor_data_id;
+```
+#### c. Rolling Average (7 Days in 1 Day Increments)
+```sql
+SELECT sensor_id_sensor_table, 
+       date_trunc('day', timestamp) AS day,
+       AVG(CAST(data AS FLOAT)) AS avg_data
+FROM public.sensor_data
+WHERE timestamp >= NOW() - INTERVAL '7 days'
+GROUP BY sensor_id_sensor_table, date_trunc('day', timestamp)
+ORDER BY day;
+```
+#### d. Rolling Average (3 Hours in 1 Hour Increments)
+```sql
+SELECT sensor_id_sensor_table, 
+       date_trunc('hour', timestamp) AS hour,
+       AVG(CAST(data AS FLOAT)) AS avg_data
+FROM public.sensor_data
+WHERE timestamp >= NOW() - INTERVAL '3 hours'
+GROUP BY sensor_id_sensor_table, date_trunc('hour', timestamp)
+ORDER BY hour;
+```
+#### e. Raw Data
+```sql
+SELECT sensor_data_id, data, sensor_id_sensor_table
+FROM public.sensor_data
+WHERE sensor_id_sensor_table = $1; -- $1 is the sensor_id
+```
+
+### 8. **Create Sensor (Admin Route)**
+```sql
+INSERT INTO public.sensor_table (manufacturer, serial_number, model_name)
+VALUES ($1, $2, $3) -- $1: manufacturer, $2: serial_number, $3: model_name
+RETURNING sensor_id;
+```
+
+### 9. **Update Sensor (Add Group to Sensor, Admin Route)**
+```sql
+INSERT INTO public.group_join_sensors (group_id_sensor_groups, sensor_id_sensor_table)
+VALUES ($1, $2); -- $1: group_id, $2: sensor_id
+```
+
+### 10. **Add API Key to Sensor (Admin Route)**
+```sql
+INSERT INTO public.api_keys_join_sensors (api_key_id_api_keys, sensor_id_sensor_table)
+VALUES ($1, $2); -- $1: api_key_id, $2: sensor_id
+```
+
+### 11. **Create User (Admin Route)**
+```sql
+INSERT INTO public."user" (email_address, password_hash, is_activated, is_admin)
+VALUES ($1, $2, true, $3) -- $1: email, $2: hashed password, $3: is_admin (boolean)
+RETURNING user_id;
+```
+
+### 12. **Update User (User and Admin Route)**
+#### a. Password Reset
+```sql
+UPDATE public."user"
+SET password_hash = $2
+WHERE user_id = $1; -- $1: user_id, $2: new password_hash
+```
+#### b. Change Email
+```sql
+UPDATE public."user"
+SET email_address = $2
+WHERE user_id = $1; -- $1: user_id, $2: new email address
+```
+#### c. Change Name
+```sql
+UPDATE public."user"
+SET name = $2
+WHERE user_id = $1; -- $1: user_id, $2: new name
+```
+
+### 13. **Delete User (Deactivate Only, User Route)**
+```sql
+UPDATE public."user"
+SET is_activated = false
+WHERE user_id = $1; -- $1: user_id
+```
+
+### 14. **Login**
+```sql
+INSERT INTO public.user_sessions (created_at, last_used, user_id_user, last_ip)
+VALUES (NOW(), NOW(), $1, $2) -- $1: user_id, $2: IP address
+RETURNING session_id;
+```
+
+### 15. **Logout (Terminate All Sessions)**
+```sql
+DELETE FROM public.user_sessions
+WHERE user_id_user = $1; -- $1: user_id
+```
+
+Let me know if you need adjustments or additional routes!

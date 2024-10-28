@@ -1,0 +1,23 @@
+// list api keys (user route)
+// create api key (admin route) (sets permissions)
+
+// list users (admin route)
+// list sessions (user and admin route)
+// list groups
+// list sensors 
+
+// get data (latest(50 data points), range(since api key created), rolling average(7d) (1d increments),
+// rolling average(3h) (1h increments), raw data)
+
+// create sensor (admin route)
+// update sensor (add group to sensor) (admin route)
+// add api key to sensor (admin route)
+
+// create user (admin route)
+// update user (user and admin route) (password reset, change email, change name)
+// delete user (user route) (deactivate only) (todo: deside data retention policy)
+
+// login
+// logout (and other sessions)
+
+
