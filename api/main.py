@@ -93,7 +93,7 @@ class SensorTable(SQLModel, table=True):
 # sensor_id_sensor_table: smallint foreign key
 # time_recorded: timestamp
 # time_added: timestamp
-# unique_id: text
+# unique_id: text (uuidv4)
 class SensorData(SQLModel, table=True):
     sensor_data_id: int = Field(default=None, primary_key=True)
     data: bytes | None
@@ -140,11 +140,16 @@ class GroupJoinSensors(SQLModel, table=True):
     )
 
 
-# Connect to postgresql on localhost
-# postgresql://testing_user:test@localhost/idp_db
+# read db url from .env file
+from dotenv import dotenv_values
+
+env_vars = dotenv_values(".env")
+DATABASE_URL = env_vars["DATABASE_URL"]
+assert DATABASE_URL is not None
+
 connect_args = {}
 engine = create_engine(
-    "postgresql://testing_user:test@localhost/idp_db",
+    DATABASE_URL,
     echo=True,
     connect_args=connect_args,
 )
