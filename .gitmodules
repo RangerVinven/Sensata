@@ -1,0 +1,3 @@
+[submodule "sensata-documentation"]
+	path = sensata-documentation
+	url = https://github.com/RangerVinven/sensata-documentation.git
