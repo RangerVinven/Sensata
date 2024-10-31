@@ -94,7 +94,7 @@ class SensorData(SQLModel, table=True):
     data: bytes | None
     sensor_id_sensor_table: int = Field(foreign_key="sensor_table.sensor_id")
     time_recorded: datetime | None
-    time_added: datetime | None
+    time_added: datetime
     unique_id: uuid.UUID | None
 
 
