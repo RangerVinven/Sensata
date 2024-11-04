@@ -1,8 +1,17 @@
+import "./assets/dashboard.css";
+
 function Dashboard() {
     return (
-        <>
-            <h1>Dashboard</h1>
-        </>
+        <div id="Dashboard">
+            <div id="Main-Section">
+                <div id="All-Charts-Container">
+                    <div className="Chart-Container"></div>
+                    <div className="Chart-Container"></div>
+                    <div className="Chart-Container"></div>
+                    <div className="Chart-Container"></div>
+                </div>
+            </div>
+        </div>
     )
 }
 
