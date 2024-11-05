@@ -21,6 +21,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "skipLibCheck": true,
