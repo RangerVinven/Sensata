@@ -1,0 +1,52 @@
+#Main-Section {
+    height: 100dvh;
+    width: 100dvw;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#All-Charts-Container {
+    height: 85%;
+    width: 85%;
+    background: purple;
+    
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    /* grid-template-areas: "topbar topbar" "bottombar bottombar"; */
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+
+    grid-gap: 1rem;
+}
+
+.Chart-Container {
+    height: 95%;
+    width: 95%;
+    background: green;
+
+    border-radius: 0.25rem;
+}
+
+.Chart-Container:nth-child(1)  {
+    margin-top: 1rem;
+    margin-left: 2rem;
+}
+
+.Chart-Container:nth-child(2)  {
+    margin-top: 1rem;
+    margin-right: 1rem;
+}
+
+.Chart-Container:nth-child(3)  {
+    margin-bottom: 1rem;
+    margin-left: 2rem;
+}
+
+.Chart-Container:nth-child(4)  {
+    margin-bottom: 1rem;
+    margin-right: 1rem;
+}
+
