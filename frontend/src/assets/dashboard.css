@@ -1,5 +1,5 @@
 #Main-Section {
-    height: 100dvh;
+    height: 92dvh;
     width: 100dvw;
 
     display: flex;
@@ -14,7 +14,7 @@
     width: 90%;
 
     border-radius: 0.25rem;
-    background: purple;
+    background: #86428b;
     
     display: grid;
     align-items: center;
