@@ -10,7 +10,7 @@
     background-color:  #E292FE;
     ;
     padding: 2rem;
-    border-radius: 8px;
+    border-radius: 80px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 400px;
@@ -30,7 +30,7 @@
     width: 100%;
     padding: 0.5rem;
     border: 1px solid #ccc;
-    border-radius: 4px;
+    border-radius: 12.5px;
   }
   
   .error-message {
@@ -45,7 +45,7 @@
     background-color: #007bff;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 12.5px;
     cursor: pointer;
   }
   
