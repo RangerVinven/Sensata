@@ -1,14 +1,13 @@
-import React, { useState,useEffect  } from 'react';
-import './Login.css'; 
+import React, { useState, useEffect } from 'react';
+import './Login.css';
 
 function Login() {
-  // State variables for form inputs
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [emailError, setEmailError] = useState<string>('');
   const [passwordError, setPasswordError] = useState<string>('');
   const [time, setTime] = useState<string>(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-  
+
   useEffect(() => {
     const timerId = setInterval(() => {
       setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
@@ -17,7 +16,6 @@ function Login() {
     return () => clearInterval(timerId);
   }, []);
 
-  // Function to validate email format
   const validateEmail = (email: string): boolean => {
     const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(email)) {
@@ -28,7 +26,6 @@ function Login() {
     return true;
   };
 
-  // Function to validate password length
   const validatePassword = (password: string): boolean => {
     if (password.length < 6) {
       setPasswordError('Password must be at least 6 characters long.');
@@ -38,7 +35,6 @@ function Login() {
     return true;
   };
 
-  // Form submission handler
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const isEmailValid = validateEmail(email);
@@ -55,11 +51,10 @@ function Login() {
   return (
     <div className="login-container">
       <form onSubmit={handleLogin} className="login-form">
-       {/* Add the clock display at the top of the form */}
-       <div className="digital-clock">
-        {time}
-       </div>
-       <h2>Login</h2>
+        <div className="digital-clock">
+          <div className="time-display">{time}</div>
+        </div>
+        <h2 className="login-heading">Login to Sensata</h2>
         <div className="form-group">
           <label htmlFor="email">Email</label>
           <input
