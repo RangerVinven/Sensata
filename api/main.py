@@ -83,12 +83,22 @@ def on_startup():
 
 @app.get("/")
 async def read_root():
+    """
+    hello world
+    """
+
     return {"Hello": "World"}
 
 
 # list api keys
 @app.get("/api/v1/admin/list_api_keys")
 async def list_api_keys(session: SessionDep):
+    """
+    Lists all api keys
+
+    todo: implement authentication and pagination
+    """
+
     keys = session.exec(select(ApiKey)).all()
     return keys
 
@@ -96,6 +106,12 @@ async def list_api_keys(session: SessionDep):
 # create api key
 @app.post("/api/v1/admin/create_api_key/{user_id}")
 async def create_api_key(user_id: int, session: SessionDep):
+    """
+    Create a new api key for a user
+
+    todo: implement authentication
+    """
+
     # check user exists
     user = session.exec(select(User).where(User.user_id == user_id)).first()
     if user is None:
@@ -118,6 +134,11 @@ async def create_api_key(user_id: int, session: SessionDep):
 # list all users
 @app.get("/api/v1/admin/list_users")
 async def list_users(session: SessionDep):
+    """
+    List all users
+
+    todo: implement authentication
+    """
     users = session.exec(select(User)).all()
     return users
 
@@ -125,6 +146,11 @@ async def list_users(session: SessionDep):
 # list sessions
 @app.get("/api/v1/admin/list_sessions")
 async def list_sessions(session: SessionDep):
+    """
+    List all user sessions
+
+    todo: implement authentication
+    """
     sessions = session.exec(select(UserSession)).all()
     return sessions
 
@@ -132,15 +158,20 @@ async def list_sessions(session: SessionDep):
 # list all groups
 @app.get("/api/v1/admin/list_groups")
 async def list_groups(session: SessionDep):
+    """
+    List all sensor groups
+    """
     groups = session.exec(select(SensorGroup)).all()
     return groups
 
 
 # list all sensors
-
-
 @app.get("/api/v1/all_sensors")
 async def get_all_sensors(session: SessionDep):
+    """
+    Return all sensors
+    """
+
     sensors = session.exec(select(SensorTable)).all()
     return sensors
 
@@ -150,6 +181,11 @@ async def get_all_sensors(session: SessionDep):
 
 @app.post("/api/v1/sensor")
 async def add_sensor(sensor_data: sensor_type, session: SessionDep):
+    """
+    Add a new sensor to the database
+    and return the sensor object
+    """
+
     # validate any(sensor_data.values())
     # add sensor to the database
     if not any(value is not None for value in vars(sensor_data).values()):
@@ -170,6 +206,10 @@ async def add_sensor(sensor_data: sensor_type, session: SessionDep):
 # update sensor
 @app.put("/api/v1/sensor/{sensor_id}")
 async def update_sensor(sensor_id: int, sensor_data: sensor_type, session: SessionDep):
+    """
+    Update sensor meta-data (only non-null fields are updated)
+    """
+
     # check if sensor exists
     sensor = session.exec(
         select(SensorTable).where(SensorTable.sensor_id == sensor_id)
@@ -194,12 +234,39 @@ async def update_sensor(sensor_id: int, sensor_data: sensor_type, session: Sessi
 # create user
 @app.post("/api/v1/admin/user")
 async def add_user(user_data: User, session: SessionDep):
+    """
+    Add a new user to the database
+
+    todo: document that password_hash is not hashed
+    and is hashed on the server side using bcrypt
+    todo: implement authentication
+    """
+
     # check if user exists
     user = session.exec(select(User).where(User.email == user_data.email)).first()
     if user is not None:
         raise HTTPException(status_code=400, detail="User already exists")
 
+    # validate password length
+    if len(user_data.password_hash) < 8:
+        raise HTTPException(
+            status_code=400, detail="Password length should be at least 8 characters"
+        )
+    elif len(user_data.password_hash) > 60:
+        raise HTTPException(
+            status_code=400, detail="Password length should be at most 60 characters"
+        )
+
+    # valdiate email
+    if "@" not in user_data.email:
+        raise HTTPException(status_code=400, detail="Invalid email")
+
     # add user to the database
+    # assume password isn't hashed
+    user_data.password_hash = bcrypt.hashpw(
+        user_data.password_hash.encode("utf-8"), bcrypt.gensalt()
+    ).decode("utf-8")
+
     session.add(user_data)
     session.commit()
     session.refresh(user_data)
@@ -209,6 +276,14 @@ async def add_user(user_data: User, session: SessionDep):
 # update user
 @app.put("/api/v1/admin/user/{user_id}")
 async def update_user(user_id: int, user_data: User, session: SessionDep):
+    """
+    Update user data (only non-null fields are updated)
+
+    todo: document that password_hash is not hashed
+    and is hashed on the server side using bcrypt
+    todo: implement authentication
+    """
+
     # check if user exists
     user = session.exec(select(User).where(User.user_id == user_id)).first()
     if user is None:
@@ -218,6 +293,21 @@ async def update_user(user_id: int, user_data: User, session: SessionDep):
     if user_data.email is not None:
         user.email = user_data.email
     if user_data.password_hash is not None:
+        # validate password length
+        if len(user_data.password_hash) < 8:
+            raise HTTPException(
+                status_code=400,
+                detail="Password length should be at least 8 characters",
+            )
+        elif len(user_data.password_hash) > 60:
+            raise HTTPException(
+                status_code=400,
+                detail="Password length should be at most 60 characters",
+            )
+        user_data.password_hash = bcrypt.hashpw(
+            user_data.password_hash.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
+
         user.password_hash = user_data.password_hash
     if user_data.is_activated is not None:
         user.is_activated = user_data.is_activated
@@ -233,6 +323,12 @@ async def update_user(user_id: int, user_data: User, session: SessionDep):
 # delete user (deactivate)
 @app.delete("/api/v1/admin/user/{user_id}")
 async def delete_user(user_id: int, session: SessionDep):
+    """
+    Deactivate a user
+
+    todo: implement authentication
+    """
+
     # check if user exists
     user = session.exec(select(User).where(User.user_id == user_id)).first()
     if user is None:
@@ -250,6 +346,11 @@ async def delete_user(user_id: int, session: SessionDep):
 # login
 @app.post("/api/v1/login")
 async def login(email: str, password: bytes, session: SessionDep, request: Request):
+    """
+    Login a user by creating a new session
+    and returning the session token
+    """
+
     # check if user exists
     user = session.exec(select(User).where(User.email == email)).first()
     if user is None:
@@ -259,24 +360,32 @@ async def login(email: str, password: bytes, session: SessionDep, request: Reque
     if bcrypt.checkpw(password, user.password_hash.encode("utf-8")):
         raise HTTPException(status_code=400, detail="Incorrect password")
 
+    # check if user is activated
+    if not user.is_activated:
+        raise HTTPException(status_code=400, detail="User was deactivated")
+
     # create a new session
-    session = UserSession(
+    user_session = UserSession(
         user_id_user=user.user_id,
-        session_token=str(uuid.uuid4()),
+        session_token=uuid.uuid4(),
         created_at=datetime.now(),
-        expires_at=datetime.now() + timedelta(days=30),
         last_used=datetime.now(),
         last_ip=request.client.host,
     )
-    session.add(session)
+    session.add(user_session)
     session.commit()
-    session.refresh(session)
-    return session
+    session.refresh(user_session)
+    return user_session.session_token
 
 
 # logout
 @app.post("/api/v1/logout")
 async def logout(session_token: str, session: SessionDep):
+    """
+    Logout a user by deleting the session
+    Doesn't log out other sessions (todo: implement another endpoint for that)
+    """
+
     # check if session exists
     session = session.exec(
         select(UserSession).where(UserSession.session_token == session_token)
@@ -293,6 +402,10 @@ async def logout(session_token: str, session: SessionDep):
 # implement queries from ../chatgpt_query_design_response.txt
 @app.get("/api/v1/data")
 async def return_all_data(session: SessionDep):
+    """
+    Returns the last 50 sensor data entries in ascending order
+    """
+
     data = session.exec(
         select(SensorData)
         .order_by(SensorData.sensor_data_id.desc())
@@ -304,6 +417,13 @@ async def return_all_data(session: SessionDep):
 
 @app.post("/api/v1/data")
 async def add_data(json_sensor_data: sensor_data_type, session: SessionDep):
+    """
+    Add sensor data to the database
+
+    data is base64 encoded and will be rejected if it is not,
+    server will decode the data and store it in the database
+    """
+
     # check if data is base64 encoded
     try:
         original_data = json_sensor_data.data
@@ -335,6 +455,10 @@ async def add_data(json_sensor_data: sensor_data_type, session: SessionDep):
 
 @app.get("/api/v1/active_sensors")
 async def get_active_sensors(session: SessionDep):
+    """
+    Return all sensors that have sent data in the last 30 minutes
+    """
+
     # select all sensors that have sent data in the last 30 minutes
     sensors = (
         session.exec(
@@ -363,6 +487,10 @@ async def get_active_sensors(session: SessionDep):
 # list api keys for users
 @app.get("/api/v1/user/api_keys/{user_id}")
 async def get_user_api_keys(user_id: str, session: SessionDep):
+    """
+    List all api keys for a user
+    """
+
     # select all api keys for a user
     keys = session.exec(select(ApiKey).where(ApiKey.user_id_user == user_id)).all()
 
@@ -373,6 +501,11 @@ async def get_user_api_keys(user_id: str, session: SessionDep):
 # this is the result of addative join of api_keys_join_groups and api_keys_join_sensors
 @app.get("/api/v1/api_key/sensors/{api_key}")
 async def get_sensors_for_api_key(api_key: str, session: SessionDep):
+    """
+    todo: complete implementation, currently only returns sensors
+    belonging to a group for an api key
+    """
+
     # select all sensors for an api key
     api_key_id = session.exec(
         select(ApiKey.api_key_id).where(ApiKey.api_key_text == api_key)
@@ -383,3 +516,22 @@ async def get_sensors_for_api_key(api_key: str, session: SessionDep):
     )
 
     return sensors
+
+
+# return if a user is an admin
+@app.get("/api/v1/user/is_admin")
+def get_is_admin(session_token: str, session: SessionDep):
+    """
+    Return if a user is an admin
+    """
+
+    # select user from session
+
+    user = session.exec(
+        select(User).where(UserSession.session_token == session_token)
+    ).first()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"is_admin": user.is_admin}

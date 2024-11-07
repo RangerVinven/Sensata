@@ -39,6 +39,7 @@ class UserSession(SQLModel, table=True):
     last_used: datetime | None
     last_ip: str | None
     user_id_user: int = Field(foreign_key="user.user_id")
+    session_token: uuid.UUID | None
 
 
 # Define api_keys table
