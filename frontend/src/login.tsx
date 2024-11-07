@@ -6,11 +6,11 @@ function Login() {
   const [password, setPassword] = useState<string>('');
   const [emailError, setEmailError] = useState<string>('');
   const [passwordError, setPasswordError] = useState<string>('');
-  const [time, setTime] = useState<string>(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  const [time, setTime] = useState<string>(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
   useEffect(() => {
     const timerId = setInterval(() => {
-      setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     }, 1000);
 
     return () => clearInterval(timerId);
@@ -51,10 +51,10 @@ function Login() {
   return (
     <div className="login-container">
       <form onSubmit={handleLogin} className="login-form">
+        <h2 className="login-heading">Login to Sensata</h2>
         <div className="digital-clock">
           <div className="time-display">{time}</div>
         </div>
-        <h2 className="login-heading">Login to Sensata</h2>
         <div className="form-group">
           <label htmlFor="email">Email</label>
           <input
