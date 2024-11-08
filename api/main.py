@@ -2,6 +2,7 @@ from typing import Annotated, Union
 
 from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
+from fastapi.middleware.cors import CORSMiddleware
 
 from sqlalchemy.util import b64decode
 from sqlmodel import Session, create_engine, select
@@ -48,6 +49,8 @@ class CustomJSONEncoder(JSONEncoder):
 
 app = FastAPI()
 
+# CORS Config
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # read db url from .env file
 from dotenv import dotenv_values
@@ -408,6 +411,23 @@ async def return_all_data(session: SessionDep):
 
     data = session.exec(
         select(SensorData)
+        .order_by(SensorData.sensor_data_id.desc())
+        .limit(50)
+        .order_by(SensorData.sensor_data_id)
+    ).all()
+    return CustomJSONEncoder().encode(data)
+
+
+# Gets the sensor data for the given sensor
+@app.get("/api/v1/{sensor_id}")
+async def return_all_data_from_sensor(sensor_id: int, session: SessionDep):
+    """
+    Returns the last 50 sensor data entries in ascending order, for that given sensor
+    """
+
+    data = session.exec(
+        select(SensorData)
+        .where(SensorData.sensor_id_sensor_table == sensor_id)
         .order_by(SensorData.sensor_data_id.desc())
         .limit(50)
         .order_by(SensorData.sensor_data_id)
