@@ -418,6 +418,23 @@ async def return_all_data(session: SessionDep):
     return CustomJSONEncoder().encode(data)
 
 
+# Gets the sensor data for the given sensor
+@app.get("/api/v1/{sensor_id}")
+async def return_all_data_from_sensor(sensor_id: int, session: SessionDep):
+    """
+    Returns the last 50 sensor data entries in ascending order, for that given sensor
+    """
+
+    data = session.exec(
+        select(SensorData)
+        .where(SensorData.sensor_id_sensor_table == sensor_id)
+        .order_by(SensorData.sensor_data_id.desc())
+        .limit(50)
+        .order_by(SensorData.sensor_data_id)
+    ).all()
+    return CustomJSONEncoder().encode(data)
+
+
 @app.post("/api/v1/data")
 async def add_data(json_sensor_data: sensor_data_type, session: SessionDep):
     """
