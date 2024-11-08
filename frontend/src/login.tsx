@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
 
 function Login() {
@@ -7,6 +8,7 @@ function Login() {
   const [emailError, setEmailError] = useState<string>('');
   const [passwordError, setPasswordError] = useState<string>('');
   const [time, setTime] = useState<string>(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timerId = setInterval(() => {
@@ -46,6 +48,13 @@ function Login() {
 
     // Mock API call logic (can be replaced with actual API integration)
     console.log('Form submitted successfully:', { email, password });
+
+    // Navigate to another route upon successful login
+    navigate('/dashboard'); // Replace '/dashboard' with your desired route
+  };
+
+  const handleForgotPassword = () => {
+    navigate('/forgot-password');
   };
 
   return (
@@ -80,6 +89,7 @@ function Login() {
           {passwordError && <p className="error-message">{passwordError}</p>}
         </div>
         <button type="submit">Login</button>
+        <p className="forgot-password" onClick={handleForgotPassword}>Forgot password?</p>
       </form>
     </div>
   );
