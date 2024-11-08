@@ -74,3 +74,13 @@ form {
   color: red;
   font-size: 0.8rem;
 }
+
+.forgot-password {
+  color: #007bff;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
