@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./assets/dashboard.css";
 
+import { Select } from "@chakra-ui/react";
 import Navbar from "./components/Navbar";
 import LineChartComponent from "./components/dashboard/LineChart";
 import BarChartComponent from "./components/dashboard/BarChart";
@@ -13,6 +14,7 @@ function Dashboard() {
     const [todaysTraffic, setTodaysTraffic] = useState<Array<SensorData> | null>(null);
     const [pastSevenDaysTraffic, setPastSevenDaysTraffic] = useState<Array<SensorData> | null>(null);
     const [averagePastSevenDaysTraffic, setAveragePastSevenDaysTraffic] = useState<Number | null>(null);
+    const [sensors, setSensors] = useState<Array<SensorType> | null>(null)
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -25,13 +27,22 @@ function Dashboard() {
         data: string
     }
 
+    type SensorType = {
+        sensor_id: Number,
+        sensor_model_name: string,
+        serial_number: Number | null,
+        manufacturer: Number | null,
+        key: string
+    }
+
     // Gets all the sensors
     async function getSensors() {
         try {
-            const response = await fetch("https://idp_api.arfff.dog/redoc");
-            const sensors = await response.json();
+            const response = await fetch("https://idp_api.arfff.dog/api/v1/all_sensors");
+            const sensors_json = await response.json();
 
-            return sensors
+            setSensors(sensors_json)
+            return sensors_json
 
         } catch (error: any) {
             console.error(error.message)
@@ -132,6 +143,7 @@ function Dashboard() {
 
 
     useEffect(() => {
+        const sensor_json = getSensors();
         getSensorData(1);
         setIsLoading(false);
     }, []);
@@ -142,42 +154,50 @@ function Dashboard() {
             <Navbar />
 
             <div id="Main-Section">
-                <div id="All-Charts-Container">
-                    <div className="Chart-Container">
-                    {pastSevenDaysTraffic != null
-                     ?  <>
-                            <LineChartComponent pastSevenDaysTraffic={pastSevenDaysTraffic} />
-                        </>
-                    : <h3>Loading...</h3>
-                    }
-                    </div>
-                    <div className="Chart-Container">
-                    {totalDailyTraffic != null
-                     ?  <>
-                            <h3>{totalDailyTraffic.toString()}</h3>
-                            <p>Today's Total Traffic</p>
-                        </>
-                    : <h3>Loading...</h3>
-                    }
-                    </div>
-
-                    <div className="Chart-Container">
-                    {todaysTraffic != null
-                     ?  <>
-                            <BarChartComponent todaysTraffic={todaysTraffic} />
-                        </>
-                    : <h3>Loading...</h3>
-                    }
-                    </div>
-                    <div className="Chart-Container">
-                        {averagePastSevenDaysTraffic != null
+            <div id="Charts-Select-Container">
+                <select className="dropdown">
+                    <option value="" disabled selected>Select a sensor</option>
+                    <option value="option1">Option 1</option>
+                    <option value="option2">Option 2</option>
+                    <option value="option3">Option 3</option>
+                </select>
+                    <div id="All-Charts-Container">
+                        <div className="Chart-Container">
+                        {pastSevenDaysTraffic != null
                          ?  <>
-                                <h3>{averagePastSevenDaysTraffic.toString()}</h3>
-                                <p>Avg. Daily Traffic</p>
-                                <p>(Per The Past 7 Days)</p>
+                                <LineChartComponent pastSevenDaysTraffic={pastSevenDaysTraffic} />
                             </>
                         : <h3>Loading...</h3>
                         }
+                        </div>
+                        <div className="Chart-Container">
+                        {totalDailyTraffic != null
+                         ?  <>
+                                <h3>{totalDailyTraffic.toString()}</h3>
+                                <p>Today's Total Traffic</p>
+                            </>
+                        : <h3>Loading...</h3>
+                        }
+                        </div>
+
+                        <div className="Chart-Container">
+                        {todaysTraffic != null
+                         ?  <>
+                                <BarChartComponent todaysTraffic={todaysTraffic} />
+                            </>
+                        : <h3>Loading...</h3>
+                        }
+                        </div>
+                        <div className="Chart-Container">
+                            {averagePastSevenDaysTraffic != null
+                             ?  <>
+                                    <h3>{averagePastSevenDaysTraffic.toString()}</h3>
+                                    <p>Avg. Daily Traffic</p>
+                                    <p>(Per The Past 7 Days)</p>
+                                </>
+                            : <h3>Loading...</h3>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
