@@ -28,7 +28,7 @@ function Dashboard() {
     // Gets all the sensors
     async function getSensors() {
         try {
-            const response = await fetch("http://localhost:8000/api/v1/all_sensors");
+            const response = await fetch("https://idp_api.arfff.dog/redoc");
             const sensors = await response.json();
 
             return sensors
@@ -41,7 +41,7 @@ function Dashboard() {
     // Gets the sensor data for the given sensor
     async function getSensorData(sensor_id: Number) {
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/${sensor_id}`);
+            const response = await fetch(`http://idp_api.arfff.dog/api/v1/${sensor_id}`);
             const sensor_data = JSON.parse(await response.json());
 
             // Saves the sensor data, and updates today's traffic
