@@ -10,7 +10,7 @@
 }
 
 #All-Charts-Container {
-    height: 85%;
+    height: fit-content;
     width: 90%;
 
     border-radius: 0.25rem;
