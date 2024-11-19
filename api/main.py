@@ -1,9 +1,5 @@
 from typing import Annotated, Union
 
-# from pydantic.json import ENCODERS_BY_TYPE
-
-# ENCODERS_BY_TYPE[bytes] = lambda v: base64.b64encode(v).decode()
-
 from fastapi import FastAPI, Depends, HTTPException, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,9 +18,6 @@ from json import JSONEncoder, dumps
 from pydantic import BaseModel
 
 import bcrypt
-
-
-# ENCODERS_BY_TYPE[SensorData] =
 
 
 class sensor_type(BaseModel):
