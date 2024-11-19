@@ -50,7 +50,13 @@ class CustomJSONEncoder(JSONEncoder):
 app = FastAPI()
 
 # CORS Config
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # read db url from .env file
 from dotenv import dotenv_values
@@ -348,7 +354,7 @@ async def delete_user(user_id: int, session: SessionDep):
 
 # login
 @app.post("/api/v1/login")
-async def login(email: str, password: bytes, session: SessionDep, request: Request):
+async def login(email: str, password: str, session: SessionDep, request: Request):
     """
     Login a user by creating a new session
     and returning the session token
@@ -419,7 +425,7 @@ async def return_all_data(session: SessionDep):
 
 
 # Gets the sensor data for the given sensor
-@app.get("/api/v1/{sensor_id}")
+@app.get("/api/v1/sensor_data/{sensor_id}")
 async def return_all_data_from_sensor(sensor_id: int, session: SessionDep):
     """
     Returns the last 50 sensor data entries in ascending order, for that given sensor
