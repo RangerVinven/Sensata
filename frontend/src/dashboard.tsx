@@ -10,7 +10,7 @@ import { useEffect } from "react";
 function Dashboard() {
   // The sensor data
   const [sensor_data, setSensorData] = useState<Array<SensorData>>([]);
-  const [totalDailyTraffic, setTotalDailyTraffic] = useState<Number | null>(
+  const [totalDailyTraffic, setTotalDailyTraffic] = useState<number | null>(
     null,
   );
   const [todaysTraffic, setTodaysTraffic] = useState<Array<SensorData> | null>(
@@ -19,25 +19,25 @@ function Dashboard() {
   const [pastSevenDaysTraffic, setPastSevenDaysTraffic] =
     useState<Array<SensorData> | null>(null);
   const [averagePastSevenDaysTraffic, setAveragePastSevenDaysTraffic] =
-    useState<Number | null>(null);
+    useState<number | null>(null);
   const [sensors, setSensors] = useState<Array<SensorType> | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   type SensorData = {
     time_added: string;
-    sensor_id_sensor_table: Number;
+    sensor_id_sensor_table: number;
     time_recorded: string;
-    sensor_data_id: Number;
+    sensor_data_id: number;
     unique_id: string;
     data: string;
   };
 
   type SensorType = {
-    sensor_id: Number;
+    sensor_id: number;
     sensor_model_name: string;
-    serial_number: Number | null;
-    manufacturer: Number | null;
+    serial_number: number | null;
+    manufacturer: number | null;
     key: string;
   };
 
@@ -57,16 +57,27 @@ function Dashboard() {
   }
 
   // Gets the sensor data for the given sensor
-  async function getSensorData(sensor_id: Number) {
+  async function getSensorData(
+    sensor_id: number,
+    cursor: string | null = null,
+  ) {
     try {
+      let cursor_string: string;
+      if (cursor != null) {
+        cursor_string = `?cursor=${cursor}`;
+      } else {
+        cursor_string = "";
+      }
+
       const response = await fetch(
-        `http://idp_api.arfff.dog/api/v1/sensor_data/${sensor_id}`,
+        `http://idp_api.arfff.dog/api/v1/sensor_data/${sensor_id}` +
+          cursor_string,
       );
-      const sensor_data = JSON.parse(await response.json());
+      const sensor_data = await response.json();
 
       // Saves the sensor data, and updates today's traffic
-      setSensorData(sensor_data);
-      getTodaysTraffic(sensor_data);
+      setSensorData(sensor_data.data);
+      getTodaysTraffic(sensor_data.data);
 
       return sensor_data;
     } catch (error: any) {
@@ -123,7 +134,7 @@ function Dashboard() {
 
   // Gets the average daily traffic from the past 7 days
   function getDailyAverageTraffic(traffic: Array<SensorData>) {
-    let trafficPerDay: Record<number, number> = {};
+    const trafficPerDay: Record<number, number> = {};
 
     // Loops over the traffic array, adding the day (0-6 for the days of the week) to the dictionary
     // Results in something like { 2: 3, 4: 9, 5: 5 } (the keys representing "Monday"-"Sunday")
@@ -140,7 +151,7 @@ function Dashboard() {
 
     // Loops over each day's traffic, adding it to the average
     let average = 0;
-    for (let key in trafficPerDay) {
+    for (const key in trafficPerDay) {
       average += trafficPerDay[key];
     }
 
