@@ -433,6 +433,9 @@ async def return_data_from_sensor(
     Returns the last 50 sensor data entries in ascending order, for that given sensor
     """
 
+    if count > 100:
+        count = 100
+
     if cursor is None:
         cursor = "00000000-0000-0000-0000-000000000000"
 
