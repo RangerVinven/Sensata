@@ -240,9 +240,14 @@ async def update_sensor(sensor_id: int, sensor_data: sensor_type, session: Sessi
     return sensor
 
 
+class UserCreate(BaseModel):
+    email: str
+    password: str
+
+
 # create user
 @app.post("/api/v1/admin/user")
-async def add_user(user_data: User, session: SessionDep):
+async def add_user(user_data: UserCreate, session: SessionDep):
     """
     Add a new user to the database
 
@@ -257,11 +262,11 @@ async def add_user(user_data: User, session: SessionDep):
         raise HTTPException(status_code=400, detail="User already exists")
 
     # validate password length
-    if len(user_data.password_hash) < 8:
+    if len(user_data.password) < 8:
         raise HTTPException(
             status_code=400, detail="Password length should be at least 8 characters"
         )
-    elif len(user_data.password_hash) > 60:
+    elif len(user_data.password) > 60:
         raise HTTPException(
             status_code=400, detail="Password length should be at most 60 characters"
         )
@@ -272,19 +277,51 @@ async def add_user(user_data: User, session: SessionDep):
 
     # add user to the database
     # assume password isn't hashed
-    user_data.password_hash = bcrypt.hashpw(
-        user_data.password_hash.encode("utf-8"), bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(
+        user_data.password.encode("utf-8"), bcrypt.gensalt()
     ).decode("utf-8")
 
-    session.add(user_data)
+    db_user = User(
+        email=user_data.email,
+        password_hash=hashed_password,
+        is_activated=True,
+        is_admin=False,
+    )
+
+    session.add(db_user)
     session.commit()
-    session.refresh(user_data)
-    return user_data
+    session.refresh(db_user)
+    return db_user
+
+
+# set user as admin
+@app.put("/api/v1/admin/user/{user_id}/set_admin")
+async def set_user_as_admin(user_id: int, session: SessionDep):
+    """
+    Set a user as an admin
+    """
+
+    # check if user exists
+    user = session.exec(select(User).where(User.user_id == user_id)).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.is_admin = True
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+class UserUpdate(BaseModel):
+    email: str | None
+    password: str | None
 
 
 # update user
 @app.put("/api/v1/admin/user/{user_id}")
-async def update_user(user_id: int, user_data: User, session: SessionDep):
+async def update_user(user_id: int, user_data: UserUpdate, session: SessionDep):
     """
     Update user data (only non-null fields are updated)
 
@@ -298,30 +335,30 @@ async def update_user(user_id: int, user_data: User, session: SessionDep):
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # check if any fields are updated
+    if user_data.email is None and user_data.password is None:
+        raise HTTPException(
+            status_code=400, detail="No fields are updated, nothing to update"
+        )
+
     # update user
     if user_data.email is not None:
         user.email = user_data.email
-    if user_data.password_hash is not None:
+    if user_data.password is not None:
         # validate password length
-        if len(user_data.password_hash) < 8:
+        if len(user_data.password) < 8:
             raise HTTPException(
                 status_code=400,
                 detail="Password length should be at least 8 characters",
             )
-        elif len(user_data.password_hash) > 60:
+        elif len(user_data.password) > 60:
             raise HTTPException(
                 status_code=400,
                 detail="Password length should be at most 60 characters",
             )
-        user_data.password_hash = bcrypt.hashpw(
-            user_data.password_hash.encode("utf-8"), bcrypt.gensalt()
+        user.password_hash = bcrypt.hashpw(
+            user_data.password.encode("utf-8"), bcrypt.gensalt()
         ).decode("utf-8")
-
-        user.password_hash = user_data.password_hash
-    if user_data.is_activated is not None:
-        user.is_activated = user_data.is_activated
-    if user_data.is_admin is not None:
-        user.is_admin = user_data.is_admin
 
     session.add(user)
     session.commit()
