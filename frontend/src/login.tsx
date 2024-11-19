@@ -1,18 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './Login.css';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Login.css";
 
 function Login() {
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [emailError, setEmailError] = useState<string>('');
-  const [passwordError, setPasswordError] = useState<string>('');
-  const [time, setTime] = useState<string>(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
+  const [passwordError, setPasswordError] = useState<string>("");
+  const [time, setTime] = useState<string>(
+    new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }),
+  );
   const navigate = useNavigate();
 
   useEffect(() => {
     const timerId = setInterval(() => {
-      setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setTime(
+        new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+      );
     }, 1000);
 
     return () => clearInterval(timerId);
@@ -21,19 +33,19 @@ function Login() {
   const validateEmail = (email: string): boolean => {
     const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(email)) {
-      setEmailError('Please enter a valid email address.');
+      setEmailError("Please enter a valid email address.");
       return false;
     }
-    setEmailError('');
+    setEmailError("");
     return true;
   };
 
   const validatePassword = (password: string): boolean => {
     if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters long.');
+      setPasswordError("Password must be at least 6 characters long.");
       return false;
     }
-    setPasswordError('');
+    setPasswordError("");
     return true;
   };
 
@@ -47,14 +59,14 @@ function Login() {
     }
 
     // Mock API call logic (can be replaced with actual API integration)
-    console.log('Form submitted successfully:', { email, password });
+    console.log("Form submitted successfully:", { email, password });
 
     // Navigate to another route upon successful login
-    navigate('/dashboard'); // Replace '/dashboard' with your desired route
+    navigate("/dashboard"); // Replace '/dashboard' with your desired route
   };
 
   const handleForgotPassword = () => {
-    navigate('/forgot-password');
+    navigate("/forgot-password");
   };
 
   return (
@@ -89,7 +101,9 @@ function Login() {
           {passwordError && <p className="error-message">{passwordError}</p>}
         </div>
         <button type="submit">Login</button>
-        <p className="forgot-password" onClick={handleForgotPassword}>Forgot password?</p>
+        <p className="forgot-password" onClick={handleForgotPassword}>
+          Forgot password?
+        </p>
       </form>
     </div>
   );
