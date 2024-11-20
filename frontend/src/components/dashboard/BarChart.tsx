@@ -50,7 +50,6 @@ function BarChartComponent(props: any) {
     }
 
     useEffect(() => {
-        console.log(props.todaysTraffic)
         formatTimes(props.todaysTraffic);
     }, [])
 
@@ -83,6 +82,8 @@ function BarChartComponent(props: any) {
 
     if(todaysTraffic === null) {
         return <h3>Loading...</h3>
+    } else if (todaysTraffic.length === 0) { 
+        return <p>No Traffic For Today Yet</p>
     } else {
         return <ResponsiveContainer height={"100%"} width={"100%"}>
             <BarChart data={todaysTraffic}>
