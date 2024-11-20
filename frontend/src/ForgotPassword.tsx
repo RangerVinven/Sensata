@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './Login.css';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Login.css";
 
 function ForgotPassword() {
-  const [email, setEmail] = useState<string>('');
-  const [emailError, setEmailError] = useState<string>('');
+  const [email, setEmail] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
   const navigate = useNavigate();
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(email)) {
-      setEmailError('Please enter a valid email address.');
+      setEmailError("Please enter a valid email address.");
       return false;
     }
-    setEmailError('');
+    setEmailError("");
     return true;
   };
 
@@ -26,10 +26,10 @@ function ForgotPassword() {
     }
 
     // Mock API call logic (can be replaced with actual API integration)
-    console.log('Forgot password form submitted:', { email });
+    console.log("Forgot password form submitted:", { email });
 
     // Navigate to another route upon successful submission
-    navigate('/reset-password'); // Replace '/reset-password' with your desired route
+    navigate("/reset-password"); // Replace '/reset-password' with your desired route
   };
 
   return (
