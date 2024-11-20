@@ -23,12 +23,6 @@ function Login() {
     e.preventDefault();
     setError('');
 
-    // Local validation
-    if (username !== 'admin@admin.com') {
-      setError('Access denied. Admin only.');
-      return;
-    }
-
     try {
         const response = await fetch('/api/v1/admin/user', {
             method: 'POST',
@@ -40,9 +34,8 @@ function Login() {
         throw new Error('Something went wrong');
       }
 
-      const data = await response.json();
-      login(data.access_token);
-      navigate('/admin');
+      
+      navigate('/dashboard');
     } catch (err) {
       setError('Login failed');
     }
