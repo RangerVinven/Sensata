@@ -3,7 +3,6 @@ import { useState } from "react";
 import "./assets/dashboard.css";
 import SensorType from "./assets/SensorType.tsx";
 
-
 import { Select } from "@chakra-ui/react";
 import Navbar from "./components/Navbar";
 import LineChartComponent from "./components/dashboard/LineChart";

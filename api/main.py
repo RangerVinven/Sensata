@@ -1,6 +1,6 @@
 from typing import Annotated, Union
 
-from fastapi import FastAPI, Depends, HTTPException, Query, Request
+from fastapi import FastAPI, Depends, HTTPException, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,7 +13,7 @@ from models import *
 
 from datetime import timedelta
 
-from json import JSONEncoder
+from json import JSONEncoder, dumps
 
 from pydantic import BaseModel
 
@@ -50,7 +50,13 @@ class CustomJSONEncoder(JSONEncoder):
 app = FastAPI()
 
 # CORS Config
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # read db url from .env file
 from dotenv import dotenv_values
@@ -348,7 +354,7 @@ async def delete_user(user_id: int, session: SessionDep):
 
 # login
 @app.post("/api/v1/login")
-async def login(email: str, password: bytes, session: SessionDep, request: Request):
+async def login(email: str, password: str, session: SessionDep, request: Request):
     """
     Login a user by creating a new session
     and returning the session token
@@ -419,20 +425,48 @@ async def return_all_data(session: SessionDep):
 
 
 # Gets the sensor data for the given sensor
-@app.get("/api/v1/{sensor_id}")
-async def return_all_data_from_sensor(sensor_id: int, session: SessionDep):
+@app.get("/api/v1/sensor_data/{sensor_id}")
+async def return_data_from_sensor(
+    sensor_id: int, session: SessionDep, cursor: str = None, count: int = 50
+) -> str:
     """
     Returns the last 50 sensor data entries in ascending order, for that given sensor
     """
 
+    if cursor is None:
+        cursor = "00000000-0000-0000-0000-000000000000"
+
     data = session.exec(
         select(SensorData)
         .where(SensorData.sensor_id_sensor_table == sensor_id)
+        .where(SensorData.unique_id > cursor)
         .order_by(SensorData.sensor_data_id.desc())
-        .limit(50)
+        .limit(count)
         .order_by(SensorData.sensor_data_id)
     ).all()
-    return CustomJSONEncoder().encode(data)
+
+    if len(data) == 0:
+        return Response(content="{}", media_type="application/json")
+
+    cursor = data[-1].unique_id
+    ret_data = []
+    for i in data:
+        # extract into ret_data an object with the keys
+        # data, time_recorded, time_added
+
+        ret_data.append(
+            {
+                "data": base64.b64encode(i.data).decode(),
+                "time_recorded": i.time_recorded,
+                "time_added": i.time_added,
+            }
+        )
+
+    ret_data = {"data": ret_data, "cursor": cursor}
+
+    ret_data = dumps(ret_data, default=str)
+
+    return Response(content=ret_data, media_type="application/json")
 
 
 @app.post("/api/v1/data")
