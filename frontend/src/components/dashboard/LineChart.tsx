@@ -169,7 +169,7 @@ function LineChartComponent(props: any) {
         let order_of_days = []
 
         // Loops and adds the next day onto the order_of_days array
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 7; i++) {
             order_of_days.push(week_days[next_day]);
             next_day += 1;
 
