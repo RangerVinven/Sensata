@@ -247,7 +247,7 @@ class UserCreate(BaseModel):
 
 # create user
 @app.post("/api/v1/admin/user")
-async def add_user(user_data: UserCreate, session: SessionDep):
+async def add_user(user_data: UserCreate, response: Response, session: SessionDep):
     """
     Add a new user to the database
 
@@ -291,6 +291,21 @@ async def add_user(user_data: UserCreate, session: SessionDep):
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
+
+    # create a new session
+
+    user_session = UserSession(
+        user_id_user=db_user.user_id,
+        session_token=uuid.uuid4(),
+        created_at=datetime.now(),
+        last_used=datetime.now(),
+        last_ip=request.client.host,
+    )
+    session.commit()
+    session.refresh(user_session)
+
+    response.set_cookie(key="session_token", value=str(user_session.session_token))
+
     return db_user
 
 
@@ -391,19 +406,23 @@ async def delete_user(user_id: int, session: SessionDep):
 
 # login
 @app.post("/api/v1/login")
-async def login(email: str, password: str, session: SessionDep, request: Request):
+async def login(
+    login_details: UserCreate, response: Response, session: SessionDep, request: Request
+):
     """
     Login a user by creating a new session
     and returning the session token
     """
 
     # check if user exists
-    user = session.exec(select(User).where(User.email == email)).first()
+    user = session.exec(select(User).where(User.email == login_details.email)).first()
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=400, detail="User not found")
 
     # check if password is correct (bcrypt hash)
-    if bcrypt.checkpw(password, user.password_hash.encode("utf-8")):
+    if not bcrypt.checkpw(
+        login_details.password.encode("utf-8"), user.password_hash.encode("utf-8")
+    ):
         raise HTTPException(status_code=400, detail="Incorrect password")
 
     # check if user is activated
@@ -421,7 +440,10 @@ async def login(email: str, password: str, session: SessionDep, request: Request
     session.add(user_session)
     session.commit()
     session.refresh(user_session)
-    return user_session.session_token
+
+    response.set_cookie(key="session_token", value=str(user_session.session_token))
+
+    return {"status": "success"}
 
 
 # logout
@@ -468,6 +490,9 @@ async def return_data_from_sensor(
 ) -> str:
     """
     Returns the last 50 sensor data entries in ascending order, for that given sensor
+
+    cursor is the unique_id of the last element returned
+    if there are no more elements, cursor will be "00000000-0000-0000-0000-000000000000"
     """
 
     if count > 100:
@@ -488,7 +513,12 @@ async def return_data_from_sensor(
     if len(data) == 0:
         return Response(content="{}", media_type="application/json")
 
-    cursor = data[-1].unique_id
+    next_cursor = data[-1].unique_id
+
+    # if the last element is the same as the cursor, then there are no more elements
+    if next_cursor == cursor:
+        next_cursor = "00000000-0000-0000-0000-000000000000"
+
     ret_data = []
     for i in data:
         # extract into ret_data an object with the keys
@@ -502,7 +532,7 @@ async def return_data_from_sensor(
             }
         )
 
-    ret_data = {"data": ret_data, "cursor": cursor}
+    ret_data = {"data": ret_data, "cursor": next_cursor}
 
     ret_data = dumps(ret_data, default=str)
 
