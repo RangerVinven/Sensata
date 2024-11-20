@@ -12,14 +12,19 @@ import { useEffect } from "react";
 
 function Dashboard() {
     // The sensor data
+    const [sensors, setSensors] = useState<Array<SensorType> | null>(null)
     const [sensor_data, setSensorData] = useState<Array<SensorData>>([]);
+
     const [totalDailyTraffic, setTotalDailyTraffic] = useState<Number | null>(null);
     const [todaysTraffic, setTodaysTraffic] = useState<Array<SensorData> | null>(null);
+
     const [pastSevenDaysTraffic, setPastSevenDaysTraffic] = useState<Array<SensorData> | null>(null);
     const [averagePastSevenDaysTraffic, setAveragePastSevenDaysTraffic] = useState<Number | null>(null);
-    const [sensors, setSensors] = useState<Array<SensorType> | null>(null)
+
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [sensorHasNoData, setSensorHasNoData] = useState<boolean>(false);
+
 
     type SensorData = {
         time_added: string,
@@ -47,12 +52,12 @@ function Dashboard() {
     // Gets the sensor data for the given sensor
     async function getSensorData(sensor_id: Number) {
         try {
-            const response = await fetch(`http://idp_api.arfff.dog/api/v1/sensor_data/${sensor_id}`);
+            const response = await fetch(`https://idp_api.arfff.dog/api/v1/sensor_data/${sensor_id}`);
             const response_json = await response.json()
 
             // Saves the sensor data, and updates today's traffic
             setSensorData(response_json.data)
-            return response_json.data;
+            return response_json.data || undefined;
 
         } catch (error: any) {
             console.error(error.message)
@@ -123,6 +128,8 @@ function Dashboard() {
             average += trafficPerDay[key]
         }
 
+        console.log("Average:")
+        console.log(average)
         // Makes average 0 if there's been no traffic, otherwise sets average to the actual average (this avoids NAN)
         average = average == 0 ? 0 : Math.round(average/Object.keys(trafficPerDay).length)
         setAveragePastSevenDaysTraffic(average)
@@ -141,15 +148,27 @@ function Dashboard() {
         // Gets the data for the first sensor (the default sensor)
         if(sensors_json.length > 0) {
             // Add "No sensors" message
+            
         }
 
         // Gets the sensor data of sensors[sensor_index], or the first sensor if sensor_index isn't provided
         const sensor_data = await getSensorData(sensors_json?.[sensor_index].sensor_id);
 
+        console.log(sensor_data)
+        if(sensor_data === undefined) {
+            setSensorHasNoData(true);
+            setIsLoading(false);
+
+            return
+        }
+
+        setSensorHasNoData(false)
+
         // Gets the different information to display on the dashboard
         getTodaysTraffic(sensor_data)
-        getTrafficFromSevenDays(sensor_data);
-        getDailyAverageTraffic(sensor_data);
+
+        const past_seven_days_traffic = getTrafficFromSevenDays(sensor_data);
+        getDailyAverageTraffic(past_seven_days_traffic);
 
         setIsLoading(false);
     }
@@ -162,34 +181,39 @@ function Dashboard() {
     return (
         
         <div id="Dashboard">
-            <Navbar />
+        {// <Navbar />
+        }
 
             <div id="Main-Section">
-                {
-                    isLoading
-                    ? <h3>Loading</h3> :
                 <div id="Charts-Select-Container">
-                    <SensorSelect sensors={sensors} setIsLoading={setIsLoading} />
-                    <div id="All-Charts-Container">
-                        <div className="Chart-Container">
-                            <LineChartComponent pastSevenDaysTraffic={pastSevenDaysTraffic} />
-                        </div>
-                        <div className="Chart-Container">
-                            <h3>{totalDailyTraffic?.toString()}</h3>
-                            <p>Today's Total Traffic</p>
-                        </div>
+                <SensorSelect loadDashboard={loadDashboard} sensors={sensors} setIsLoading={setIsLoading} />
 
-                        <div className="Chart-Container">
-                            <BarChartComponent todaysTraffic={todaysTraffic} />
-                        </div>
-                        <div className="Chart-Container">
-                            <h3>{averagePastSevenDaysTraffic?.toString()}</h3>
-                            <p>Avg. Daily Traffic</p>
-                            <p>(Per The Past 7 Days)</p>
-                        </div>
+                <div id="All-Charts-Container">
+                    {
+                        isLoading
+                        ? <h3 id="Loading-Icon">Loading...</h3> :
+                        sensorHasNoData ? <h3 id="Loading-Icon">Sensor has no data</h3> :
+                            <>
+                                <div className="Chart-Container">
+                                    <LineChartComponent pastSevenDaysTraffic={pastSevenDaysTraffic} />
+                                </div>
+                                <div className="Chart-Container">
+                                    <h3>{totalDailyTraffic?.toString()}</h3>
+                                    <p>Today's Total Traffic</p>
+                                </div>
+
+                                <div className="Chart-Container">
+                                    <BarChartComponent todaysTraffic={todaysTraffic} />
+                                </div>
+                                <div className="Chart-Container">
+                                    <h3>{averagePastSevenDaysTraffic?.toString()}</h3>
+                                    <p>Avg. Daily Traffic</p>
+                                    <p>(Per The Past 7 Days)</p>
+                                </div>
+                            </>
+                    }
                     </div>
                 </div>
-                }
             </div>
         </div>
     )
