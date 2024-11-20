@@ -247,7 +247,7 @@ class UserCreate(BaseModel):
 
 # create user
 @app.post("/api/v1/admin/user")
-async def add_user(user_data: UserCreate, session: SessionDep):
+async def add_user(user_data: UserCreate, response: Response, session: SessionDep):
     """
     Add a new user to the database
 
@@ -291,6 +291,21 @@ async def add_user(user_data: UserCreate, session: SessionDep):
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
+
+    # create a new session
+
+    user_session = UserSession(
+        user_id_user=db_user.user_id,
+        session_token=uuid.uuid4(),
+        created_at=datetime.now(),
+        last_used=datetime.now(),
+        last_ip=request.client.host,
+    )
+    session.commit()
+    session.refresh(user_session)
+
+    response.set_cookie(key="session_token", value=str(user_session.session_token))
+
     return db_user
 
 
@@ -391,19 +406,23 @@ async def delete_user(user_id: int, session: SessionDep):
 
 # login
 @app.post("/api/v1/login")
-async def login(email: str, password: str, session: SessionDep, request: Request):
+async def login(
+    login_details: UserCreate, response: Response, session: SessionDep, request: Request
+):
     """
     Login a user by creating a new session
     and returning the session token
     """
 
     # check if user exists
-    user = session.exec(select(User).where(User.email == email)).first()
+    user = session.exec(select(User).where(User.email == login_details.email)).first()
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=400, detail="User not found")
 
     # check if password is correct (bcrypt hash)
-    if bcrypt.checkpw(password, user.password_hash.encode("utf-8")):
+    if not bcrypt.checkpw(
+        login_details.password.encode("utf-8"), user.password_hash.encode("utf-8")
+    ):
         raise HTTPException(status_code=400, detail="Incorrect password")
 
     # check if user is activated
@@ -421,7 +440,10 @@ async def login(email: str, password: str, session: SessionDep, request: Request
     session.add(user_session)
     session.commit()
     session.refresh(user_session)
-    return user_session.session_token
+
+    response.set_cookie(key="session_token", value=str(user_session.session_token))
+
+    return {"status": "success"}
 
 
 # logout
