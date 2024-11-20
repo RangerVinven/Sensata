@@ -1,0 +1,7 @@
+select {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    width: fit-content;
+
+    border-radius: 0.25rem;
+}
