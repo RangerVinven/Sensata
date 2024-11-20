@@ -1,10 +1,14 @@
 import { useState } from "react";
+
 import "./assets/dashboard.css";
+import SensorType from "./assets/SensorType.tsx";
+
 
 import { Select } from "@chakra-ui/react";
 import Navbar from "./components/Navbar";
 import LineChartComponent from "./components/dashboard/LineChart";
 import BarChartComponent from "./components/dashboard/BarChart";
+import SensorSelect from "./components/dashboard/SensorSelect";
 import { useEffect } from "react";
 
 function Dashboard() {
@@ -27,14 +31,6 @@ function Dashboard() {
         data: string
     }
 
-    type SensorType = {
-        sensor_id: Number,
-        sensor_model_name: string,
-        serial_number: Number | null,
-        manufacturer: Number | null,
-        key: string
-    }
-
     // Gets all the sensors
     async function getSensors() {
         try {
@@ -52,14 +48,12 @@ function Dashboard() {
     // Gets the sensor data for the given sensor
     async function getSensorData(sensor_id: Number) {
         try {
-            const response = await fetch(`http://idp_api.arfff.dog/api/v1/${sensor_id}`);
-            const sensor_data = JSON.parse(await response.json());
+            const response = await fetch(`http://idp_api.arfff.dog/api/v1/sensor_data/${sensor_id}`);
+            const response_json = await response.json()
 
             // Saves the sensor data, and updates today's traffic
-            setSensorData(sensor_data)
-            getTodaysTraffic(sensor_data)
-
-            return sensor_data;
+            setSensorData(response_json.data)
+            return response_json.data;
 
         } catch (error: any) {
             console.error(error.message)
@@ -80,10 +74,6 @@ function Dashboard() {
         // Sets todays traffic and its total
         setTodaysTraffic(todaysTrafficArray);
         setTotalDailyTraffic(todaysTrafficArray.length);
-
-        // Sets the weekly traffic and its total
-        getTrafficFromSevenDays(sensor_data);
-        getDailyAverageTraffic(sensor_data);
 
         return todaysTraffic;
     }
@@ -141,12 +131,34 @@ function Dashboard() {
         return average
     }
 
+    // Calls the relevant functions to get the sensors and their data
+    async function loadDashboard(sensor_index: number = 0) {
+        // Gets all the sensors
+        const sensors_json = await getSensors();
+
+        // Saves the list in the sensors variable
+        setSensors(sensors_json)
+
+        // Gets the data for the first sensor (the default sensor)
+        if(sensors_json.length > 0) {
+            // Add "No sensors" message
+        }
+
+        // Gets the sensor data of sensors[sensor_index], or the first sensor if sensor_index isn't provided
+        const sensor_data = await getSensorData(sensors_json?.[sensor_index].sensor_id);
+
+        // Gets the different information to display on the dashboard
+        getTodaysTraffic(sensor_data)
+        getTrafficFromSevenDays(sensor_data);
+        getDailyAverageTraffic(sensor_data);
+
+        setIsLoading(false);
+    }
 
     useEffect(() => {
-        const sensor_json = getSensors();
-        getSensorData(1);
-        setIsLoading(false);
+        loadDashboard()
     }, []);
+
 
     return (
         
@@ -154,52 +166,31 @@ function Dashboard() {
             <Navbar />
 
             <div id="Main-Section">
-            <div id="Charts-Select-Container">
-                <select className="dropdown">
-                    <option value="" disabled selected>Select a sensor</option>
-                    <option value="option1">Option 1</option>
-                    <option value="option2">Option 2</option>
-                    <option value="option3">Option 3</option>
-                </select>
+                {
+                    isLoading
+                    ? <h3>Loading</h3> :
+                <div id="Charts-Select-Container">
+                    <SensorSelect sensors={sensors} setIsLoading={setIsLoading} />
                     <div id="All-Charts-Container">
                         <div className="Chart-Container">
-                        {pastSevenDaysTraffic != null
-                         ?  <>
-                                <LineChartComponent pastSevenDaysTraffic={pastSevenDaysTraffic} />
-                            </>
-                        : <h3>Loading...</h3>
-                        }
+                            <LineChartComponent pastSevenDaysTraffic={pastSevenDaysTraffic} />
                         </div>
                         <div className="Chart-Container">
-                        {totalDailyTraffic != null
-                         ?  <>
-                                <h3>{totalDailyTraffic.toString()}</h3>
-                                <p>Today's Total Traffic</p>
-                            </>
-                        : <h3>Loading...</h3>
-                        }
+                            <h3>{totalDailyTraffic?.toString()}</h3>
+                            <p>Today's Total Traffic</p>
                         </div>
 
                         <div className="Chart-Container">
-                        {todaysTraffic != null
-                         ?  <>
-                                <BarChartComponent todaysTraffic={todaysTraffic} />
-                            </>
-                        : <h3>Loading...</h3>
-                        }
+                            <BarChartComponent todaysTraffic={todaysTraffic} />
                         </div>
                         <div className="Chart-Container">
-                            {averagePastSevenDaysTraffic != null
-                             ?  <>
-                                    <h3>{averagePastSevenDaysTraffic.toString()}</h3>
-                                    <p>Avg. Daily Traffic</p>
-                                    <p>(Per The Past 7 Days)</p>
-                                </>
-                            : <h3>Loading...</h3>
-                            }
+                            <h3>{averagePastSevenDaysTraffic?.toString()}</h3>
+                            <p>Avg. Daily Traffic</p>
+                            <p>(Per The Past 7 Days)</p>
                         </div>
                     </div>
                 </div>
+                }
             </div>
         </div>
     )
