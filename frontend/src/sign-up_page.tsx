@@ -30,11 +30,11 @@ function Login() {
     }
 
     try {
-      const response = await fetch('/api/v1/admin/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+        const response = await fetch('/api/v1/admin/user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: username, password: password })
+          });
 
       if (!response.ok) {
         throw new Error('Something went wrong');
