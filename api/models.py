@@ -1,6 +1,6 @@
-from sqlmodel import SQLModel as _SQLModel, Field
+from sqlmodel import SQLModel as _SQLModel, Field, Relationship
 from fastapi_utils.camelcase import camel2snake
-from sqlalchemy.orm import declared_attr
+from sqlalchemy.orm import backref, declared_attr
 from datetime import datetime
 from pydantic import EmailStr
 import uuid
@@ -11,6 +11,43 @@ class SQLModel(_SQLModel):
     @declared_attr
     def __tablename__(cls) -> str:
         return camel2snake(cls.__name__)
+
+
+# Define many to many relationship between api_keys and sensor_groups,
+# sensor_groups and sensor_table, api_keys and sensors
+
+
+# table names: api_keys_join_groups, api_keys_join_sensors, group_join_sensors
+# api_keys_join_groups
+# api_key_id_api_keys: smallint foreign key
+# group_id_sensor_groups: smallint foreign key
+class ApiKeysJoinGroups(SQLModel, table=True):
+    api_key_id_api_keys: int = Field(foreign_key="api_key.api_key_id", primary_key=True)
+    group_id_sensor_groups: int = Field(
+        foreign_key="sensor_group.group_id", primary_key=True
+    )
+
+
+# api_keys_join_sensors
+# api_key_id_api_keys: smallint foreign key
+# sensor_id_sensor_table: smallint foreign key
+class ApiKeysJoinSensors(SQLModel, table=True):
+    api_key_id_api_keys: int = Field(foreign_key="api_key.api_key_id", primary_key=True)
+    sensor_id_sensor_table: int = Field(
+        foreign_key="sensor_table.sensor_id", primary_key=True
+    )
+
+
+# group_join_sensors
+# group_id_sensor_groups: smallint foreign key
+# sensor_id_sensor_table: smallint foreign key
+class GroupJoinSensors(SQLModel, table=True):
+    group_id_sensor_groups: int = Field(
+        foreign_key="sensor_group.group_id", primary_key=True
+    )
+    sensor_id_sensor_table: int = Field(
+        foreign_key="sensor_table.sensor_id", primary_key=True
+    )
 
 
 # Define user table
@@ -58,6 +95,12 @@ class ApiKey(SQLModel, table=True):
     permission_level: int | None
     is_active: bool | None
     api_key_text: str | None
+    groups: list["SensorGroup"] = Relationship(
+        link_model=ApiKeysJoinGroups, back_populates="api_keys"
+    )
+    sensors: list["SensorTable"] = Relationship(
+        link_model=ApiKeysJoinSensors, back_populates="api_keys"
+    )
 
 
 # Define sensor_groups table
@@ -68,6 +111,12 @@ class SensorGroup(SQLModel, table=True):
     group_id: int = Field(default=None, primary_key=True)
     group_name: str | None
     description: str | None
+    sensors: list["SensorTable"] = Relationship(
+        link_model=GroupJoinSensors, back_populates="groups"
+    )
+    api_keys: list["ApiKey"] = Relationship(
+        link_model=ApiKeysJoinGroups, back_populates="groups"
+    )
 
 
 # Define sensor_table table
@@ -81,6 +130,12 @@ class SensorTable(SQLModel, table=True):
     serial_number: str | None
     sensor_model_name: str | None
     key: uuid.UUID | None
+    api_keys: list["ApiKey"] = Relationship(
+        back_populates="sensors", link_model=ApiKeysJoinSensors
+    )
+    groups: list["SensorGroup"] = Relationship(
+        back_populates="sensors", link_model=GroupJoinSensors
+    )
 
 
 # Define sensor_data table
@@ -97,40 +152,3 @@ class SensorData(SQLModel, table=True):
     time_recorded: datetime | None
     time_added: datetime
     unique_id: uuid.UUID | None
-
-
-# Define many to many relationship between api_keys and sensor_groups,
-# sensor_groups and sensor_table, api_keys and sensors
-
-
-# table names: api_keys_join_groups, api_keys_join_sensors, group_join_sensors
-# api_keys_join_groups
-# api_key_id_api_keys: smallint foreign key
-# group_id_sensor_groups: smallint foreign key
-class ApiKeysJoinGroups(SQLModel, table=True):
-    api_key_id_api_keys: int = Field(foreign_key="api_key.api_key_id", primary_key=True)
-    group_id_sensor_groups: int = Field(
-        foreign_key="sensor_group.group_id", primary_key=True
-    )
-
-
-# api_keys_join_sensors
-# api_key_id_api_keys: smallint foreign key
-# sensor_id_sensor_table: smallint foreign key
-class ApiKeysJoinSensors(SQLModel, table=True):
-    api_key_id_api_keys: int = Field(foreign_key="api_key.api_key_id", primary_key=True)
-    sensor_id_sensor_table: int = Field(
-        foreign_key="sensor_table.sensor_id", primary_key=True
-    )
-
-
-# group_join_sensors
-# group_id_sensor_groups: smallint foreign key
-# sensor_id_sensor_table: smallint foreign key
-class GroupJoinSensors(SQLModel, table=True):
-    group_id_sensor_groups: int = Field(
-        foreign_key="sensor_group.group_id", primary_key=True
-    )
-    sensor_id_sensor_table: int = Field(
-        foreign_key="sensor_table.sensor_id", primary_key=True
-    )

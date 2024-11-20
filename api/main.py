@@ -5,7 +5,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 
 from sqlalchemy.util import b64decode
-from sqlmodel import Session, create_engine, select
+from sqlmodel import Session, create_engine, select, union
 
 import base64
 
@@ -603,11 +603,38 @@ async def get_sensors_for_api_key(api_key: str, session: SessionDep):
     # select all sensors for an api key
     api_key_id = session.exec(
         select(ApiKey.api_key_id).where(ApiKey.api_key_text == api_key)
+    ).first()
+
+    assert api_key_id is not None
+
+    stmt_group = (
+        select(SensorTable)
+        .join(
+            GroupJoinSensors,
+            GroupJoinSensors.sensor_id_sensor_table == SensorTable.sensor_id,
+        )
+        .join(
+            SensorGroup, GroupJoinSensors.group_id_sensor_groups == SensorGroup.group_id
+        )
+        .join(
+            ApiKeysJoinGroups,
+            ApiKeysJoinGroups.group_id_sensor_groups == SensorGroup.group_id,
+        )
+        .where(ApiKeysJoinGroups.api_key_id_api_keys == api_key_id)
     )
 
-    sensors = session.exec(
-        select(SensorTable).where(ApiKeysJoinGroups.api_key_id_api_keys == api_key_id)
+    stmt_sensor = (
+        select(SensorTable)
+        .join(
+            ApiKeysJoinSensors,
+            ApiKeysJoinSensors.sensor_id_sensor_table == SensorTable.sensor_id,
+        )
+        .where(ApiKeysJoinSensors.api_key_id_api_keys == api_key_id)
     )
+
+    stmt = union(stmt_group, stmt_sensor)
+
+    sensors = session.query(SensorTable).from_statement(stmt).all()
 
     return sensors
 
