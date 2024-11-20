@@ -12,13 +12,13 @@ function LineChartComponent(props: any) {
     }
 
     type WeekDays = {
-        Mon: Number,
-        Tue: Number,
-        Wed: Number,
-        Thu: Number,
-        Fri: Number,
-        Sat: Number,
-        Sun: Number
+        Mon: number,
+        Tue: number,
+        Wed: number,
+        Thu: number,
+        Fri: number,
+        Sat: number,
+        Sun: number
     }
 
     type SensorData = {
@@ -88,57 +88,110 @@ function LineChartComponent(props: any) {
         return 1
     }
 
+    function recordToWeekDay(record: SensorData) {
+        return new Date(record.time_recorded).toLocaleString("en-GB", { weekday: "short" })
+    }
+
     function parseTraffic(traffic: Array<SensorData>) {
 
-        let trafficPerDay: any = {}
+        // let trafficPerDay: any = {}
+        //
+        // // Loops over the traffic
+        // for (let i = 0; i < traffic.length; i++) {
+        //     const time_recorded = new Date(traffic[i].time_recorded);
+        //     const time_day = time_recorded.getDay() // Returns 0-6 ("Sunday"-"Saturday")
+        //
+        //     // Adds the day to the trafficPerDay
+        //     if(convertDayToDayName(time_day) in trafficPerDay) {
+        //         trafficPerDay[convertDayToDayName(time_day)] += 1;
+        //     } else {
+        //         trafficPerDay[convertDayToDayName(time_day)] = 1;
+        //     }
+        // }
+        //
+        //
+        // // Adds the remaning days and sets them to 0
+        // // trafficPerDay = addRestOfDaysToArray(trafficPerDay);
+        //
+        // // Turns the traffic into an array of objects
+        // let weeklyActivityArray = [];
+        // for(let key in trafficPerDay) {
+        //     weeklyActivityArray.push({
+        //         day: key,
+        //         "Traffic": trafficPerDay[key]
+        //     })
+        // }
+        //
+        //
+        // const daysOrder = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        // weeklyActivityArray.sort((a: any, b: any) => daysOrder.indexOf(a.day) - daysOrder.indexOf(b.day));
+        //
+        // setWeeklyTraffic(weeklyActivityArray)
+        //
 
-        // Loops over the traffic
-        for (let i = 0; i < traffic.length; i++) {
-            const time_recorded = new Date(traffic[i].time_recorded);
-            const time_day = time_recorded.getDay() // Returns 0-6 ("Monday"-"Sunday")
 
-            // Adds the day to the trafficPerDay
-            if(convertDayToDayName(time_day) in trafficPerDay) {
-                trafficPerDay[convertDayToDayName(time_day)] += 1;
-            } else {
-                trafficPerDay[convertDayToDayName(time_day)] = 1;
-            }
+
+        
+        // Sorts the traffic from earliest to latest
+        const sorted_traffic = traffic.sort((a, b) => new Date(a.time_recorded).getTime() - new Date(b.time_recorded).getTime());
+       
+        let week_activity: Array<WeekDayData> = [];
+        let each_days_traffic: WeekDays = {
+            Mon: 0,
+            Tue: 0,
+            Wed: 0,
+            Thu: 0,
+            Fri: 0,
+            Sat: 0,
+            Sun: 0
+        }
+         
+        // Counts how much traffic is in each day
+        sorted_traffic.forEach(record => {
+             // Gets the day the traffic is on
+            const day = recordToWeekDay(record)
+            each_days_traffic[day as keyof WeekDays] += 1
+        })
+
+        // Finds out the earliest day
+        const earliest_day = recordToWeekDay(sorted_traffic[0]);
+        
+        // The days of the week
+        const week_days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        const week_day_index = week_days.indexOf(earliest_day);
+
+        // Gets the correct order to display the day in on the graph
+        // The chart displays the last 7 days' data, this finds what
+        // order the days should be shown
+
+        // Sets next_day to (week_day_index + 1) unless it's 7, then sets it to 0
+        let next_day = week_day_index !== 7 ? week_day_index + 1 : 0
+        let order_of_days = []
+
+        // Loops and adds the next day onto the order_of_days array
+        for (let i = 0; i < 7; i++) {
+            order_of_days.push(week_days[next_day]);
+            next_day += 1;
+
+            if(next_day === 7) next_day = 0
         }
 
-
-        // Adds the remaning days and sets them to 0
-        // trafficPerDay = addRestOfDaysToArray(trafficPerDay);
-
-        // Turns the traffic into an array of objects
-        let weeklyActivityArray = [];
-        for(let key in trafficPerDay) {
-            weeklyActivityArray.push({
-                day: key,
-                "Traffic": trafficPerDay[key]
+        
+        // Loops and adds the day and its amount of traffic to the week_activity array
+        for (let i = 0; i < order_of_days.length; i++) {
+            week_activity.push({
+                day: order_of_days[i],
+                Traffic: each_days_traffic[order_of_days[i] as keyof WeekDays]
             })
         }
 
-
-        const daysOrder = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        weeklyActivityArray.sort((a: any, b: any) => daysOrder.indexOf(a.day) - daysOrder.indexOf(b.day));
-
-        setWeeklyTraffic(weeklyActivityArray)
-
-    }
+        setWeeklyTraffic(week_activity);
+   }
 
     useEffect(() => {
         parseTraffic(pastSevenDaysTraffic)
     }, [])
 
-    const weeklyActivity = [
-  { day: "Mon", Traffic: 120 },
-  { day: "Tue", Traffic: 200 },
-  { day: "Wed", Traffic: 150 },
-  { day: "Thu", Traffic: 170 },
-  { day: "Fri", Traffic: 180 },
-  { day: "Sat", Traffic: 220 },
-  { day: "Sun", Traffic: 240 }
-];
 
     if (weeklyTraffic == null) {
         return <h3>Loading...</h3>
