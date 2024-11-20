@@ -639,6 +639,341 @@ async def get_sensors_for_api_key(api_key: str, session: SessionDep):
     return sensors
 
 
+# get groups and sensors for an api key
+@app.get("/api/v1/api_key/groups/{api_key}")
+async def get_groups_for_api_key(api_key: str, session: SessionDep):
+    """
+    Get all groups and sensors for an api key
+    """
+
+    output = {"groups": [], "sensors": []}
+
+    # select all groups for an api key
+    api_key_id = session.exec(
+        select(ApiKey.api_key_id).where(ApiKey.api_key_text == api_key)
+    ).first()
+
+    assert api_key_id is not None
+
+    groups = (
+        session.exec(
+            select(SensorGroup)
+            .join(
+                ApiKeysJoinGroups,
+                ApiKeysJoinGroups.group_id_sensor_groups == SensorGroup.group_id,
+            )
+            .where(ApiKeysJoinGroups.api_key_id_api_keys == api_key_id)
+        )
+        .unique()
+        .all()
+    )
+
+    for group in groups:
+        output["groups"].append(
+            {
+                "group_id": group.group_id,
+                "group_name": group.group_name,
+                "group_description": group.description,
+            }
+        )
+
+    # select all sensors for an api key
+    sensors = (
+        session.exec(
+            select(SensorTable)
+            .join(
+                ApiKeysJoinSensors,
+                ApiKeysJoinSensors.sensor_id_sensor_table == SensorTable.sensor_id,
+            )
+            .where(ApiKeysJoinSensors.api_key_id_api_keys == api_key_id)
+        )
+        .unique()
+        .all()
+    )
+
+    for sensor in sensors:
+        output["sensors"].append(
+            {
+                "sensor_id": sensor.sensor_id,
+                "model_name": sensor.sensor_model_name,
+                "manufacturer": sensor.manufacturer,
+                "serial_number": sensor.serial_number,
+            }
+        )
+
+    return output
+
+
+# create group
+@app.post("/api/v1/group")
+async def create_group(group_name: str, description: str, session: SessionDep):
+    """
+    Create a new sensor group
+    """
+
+    group = SensorGroup(
+        group_name=group_name,
+        description=description,
+    )
+    session.add(group)
+    session.commit()
+    session.refresh(group)
+    return group
+
+
+# update group
+@app.put("/api/v1/group/{group_id}")
+async def update_group(
+    group_id: int, group_name: str, description: str, session: SessionDep
+):
+    """
+    Update a sensor group
+    """
+
+    # check if group exists
+    group = session.exec(
+        select(SensorGroup).where(SensorGroup.group_id == group_id)
+    ).first()
+    if group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    # update group
+    group.group_name = group_name
+    group.description = description
+
+    session.add(group)
+    session.commit()
+    session.refresh(group)
+    return group
+
+
+# add sensor to group
+@app.post("/api/v1/group/{group_id}/sensor/{sensor_id}")
+async def add_sensor_to_group(group_id: int, sensor_id: int, session: SessionDep):
+    """
+    Add a sensor to a group
+    """
+
+    # check if group exists
+    group = session.exec(
+        select(SensorGroup).where(SensorGroup.group_id == group_id)
+    ).first()
+    if group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    # check if sensor exists
+    sensor = session.exec(
+        select(SensorTable).where(SensorTable.sensor_id == sensor_id)
+    ).first()
+    if sensor is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+
+    # add sensor to group
+    group_join_sensor = GroupJoinSensors(
+        group_id_sensor_groups=group_id,
+        sensor_id_sensor_table=sensor_id,
+    )
+    session.add(group_join_sensor)
+    session.commit()
+    session.refresh(group_join_sensor)
+    return group_join_sensor
+
+
+# remove sensor from group
+@app.delete("/api/v1/group/{group_id}/sensor/{sensor_id}")
+async def remove_sensor_from_group(group_id: int, sensor_id: int, session: SessionDep):
+    """
+    Remove a sensor from a group
+    """
+
+    # check if group exists
+    group = session.exec(
+        select(SensorGroup).where(SensorGroup.group_id == group_id)
+    ).first()
+    if group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    # check if sensor exists
+    sensor = session.exec(
+        select(SensorTable).where(SensorTable.sensor_id == sensor_id)
+    ).first()
+    if sensor is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+
+    # remove sensor from group
+    group_join_sensor = session.exec(
+        select(GroupJoinSensors)
+        .where(GroupJoinSensors.group_id_sensor_groups == group_id)
+        .where(GroupJoinSensors.sensor_id_sensor_table == sensor_id)
+    ).first()
+    if group_join_sensor is None:
+        raise HTTPException(status_code=404, detail="Sensor not in group")
+
+    session.delete(group_join_sensor)
+    session.commit()
+    return group_join_sensor
+
+
+# add sensor to api key
+@app.post("/api/v1/api_key/{api_key}/sensor/{sensor_id}")
+async def add_sensor_to_api_key(api_key: str, sensor_id: int, session: SessionDep):
+    """
+    Add a sensor to an api key
+    """
+
+    # check if api key exists
+    api_key_id = session.exec(
+        select(ApiKey.api_key_id).where(ApiKey.api_key_text == api_key)
+    ).first()
+    if api_key_id is None:
+        raise HTTPException(status_code=404, detail="Api key not found")
+
+    # check if sensor exists
+    sensor = session.exec(
+        select(SensorTable).where(SensorTable.sensor_id == sensor_id)
+    ).first()
+    if sensor is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+
+    # add sensor to api key
+    api_key_join_sensor = ApiKeysJoinSensors(
+        api_key_id_api_keys=api_key_id,
+        sensor_id_sensor_table=sensor_id,
+    )
+    session.add(api_key_join_sensor)
+    session.commit()
+    session.refresh(api_key_join_sensor)
+    return api_key_join_sensor
+
+
+# add group to api key
+@app.post("/api/v1/api_key/{api_key}/group/{group_id}")
+async def add_group_to_api_key(api_key: str, group_id: int, session: SessionDep):
+    """
+    Add a group to an api key
+    """
+
+    # check if api key exists
+    api_key_id = session.exec(
+        select(ApiKey.api_key_id).where(ApiKey.api_key_text == api_key)
+    ).first()
+    if api_key_id is None:
+        raise HTTPException(status_code=404, detail="Api key not found")
+
+    # check if group exists
+    group = session.exec(
+        select(SensorGroup).where(SensorGroup.group_id == group_id)
+    ).first()
+    if group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    # add group to api key
+    api_key_join_group = ApiKeysJoinGroups(
+        api_key_id_api_keys=api_key_id,
+        group_id_sensor_groups=group_id,
+    )
+    session.add(api_key_join_group)
+    session.commit()
+    session.refresh(api_key_join_group)
+    return api_key_join_group
+
+
+# remove sensor from api key
+@app.delete("/api/v1/api_key/{api_key}/sensor/{sensor_id}")
+async def remove_sensor_from_api_key(api_key: str, sensor_id: int, session: SessionDep):
+    """
+    Remove a sensor from an api key
+    """
+
+    # check if api key exists
+    api_key_id = session.exec(
+        select(ApiKey.api_key_id).where(ApiKey.api_key_text == api_key)
+    ).first()
+    if api_key_id is None:
+        raise HTTPException(status_code=404, detail="Api key not found")
+
+    # check if sensor exists
+    sensor = session.exec(
+        select(SensorTable).where(SensorTable.sensor_id == sensor_id)
+    ).first()
+    if sensor is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+
+    # remove sensor from api key
+    api_key_join_sensor = session.exec(
+        select(ApiKeysJoinSensors)
+        .where(ApiKeysJoinSensors.api_key_id_api_keys == api_key_id)
+        .where(ApiKeysJoinSensors.sensor_id_sensor_table == sensor_id)
+    ).first()
+    if api_key_join_sensor is None:
+        raise HTTPException(status_code=404, detail="Sensor not in api key")
+
+    session.delete(api_key_join_sensor)
+    session.commit()
+    return api_key_join_sensor
+
+
+# remove group from api key
+@app.delete("/api/v1/api_key/{api_key}/group/{group_id}")
+async def remove_group_from_api_key(api_key: str, group_id: int, session: SessionDep):
+    """
+    Remove a group from an api key
+    """
+
+    # check if api key exists
+    api_key_id = session.exec(
+        select(ApiKey.api_key_id).where(ApiKey.api_key_text == api_key)
+    ).first()
+    if api_key_id is None:
+        raise HTTPException(status_code=404, detail="Api key not found")
+
+    # check if group exists
+    group = session.exec(
+        select(SensorGroup).where(SensorGroup.group_id == group_id)
+    ).first()
+    if group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    # remove group from api key
+    api_key_join_group = session.exec(
+        select(ApiKeysJoinGroups)
+        .where(ApiKeysJoinGroups.api_key_id_api_keys == api_key_id)
+        .where(ApiKeysJoinGroups.group_id_sensor_groups == group_id)
+    ).first()
+    if api_key_join_group is None:
+        raise HTTPException(status_code=404, detail="Group not in api key")
+
+    session.delete(api_key_join_group)
+    session.commit()
+    return api_key_join_group
+
+
+# create api key
+@app.post("/api/v1/admin/create_api_key/{user_id}")
+async def create_api_key(user_id: int, session: SessionDep):
+    """
+    Create a new api key for a user
+    """
+
+    # check user exists
+    user = session.exec(select(User).where(User.user_id == user_id)).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    api_key = ApiKey(
+        user_id_user=user_id,
+        api_key_text=str(uuid.uuid4()),
+        created_at=datetime.now(),
+        expires_at=datetime.now() + timedelta(days=30),
+        permission_level=1,
+        is_active=True,
+    )
+    session.add(api_key)
+    session.commit()
+    session.refresh(api_key)
+    return api_key
+
+
 # return if a user is an admin
 @app.get("/api/v1/user/is_admin")
 def get_is_admin(session_token: str, session: SessionDep):
