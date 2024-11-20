@@ -468,6 +468,9 @@ async def return_data_from_sensor(
 ) -> str:
     """
     Returns the last 50 sensor data entries in ascending order, for that given sensor
+
+    cursor is the unique_id of the last element returned
+    if there are no more elements, cursor will be "00000000-0000-0000-0000-000000000000"
     """
 
     if count > 100:
@@ -488,7 +491,12 @@ async def return_data_from_sensor(
     if len(data) == 0:
         return Response(content="{}", media_type="application/json")
 
-    cursor = data[-1].unique_id
+    next_cursor = data[-1].unique_id
+
+    # if the last element is the same as the cursor, then there are no more elements
+    if next_cursor == cursor:
+        next_cursor = "00000000-0000-0000-0000-000000000000"
+
     ret_data = []
     for i in data:
         # extract into ret_data an object with the keys
@@ -502,7 +510,7 @@ async def return_data_from_sensor(
             }
         )
 
-    ret_data = {"data": ret_data, "cursor": cursor}
+    ret_data = {"data": ret_data, "cursor": next_cursor}
 
     ret_data = dumps(ret_data, default=str)
 
