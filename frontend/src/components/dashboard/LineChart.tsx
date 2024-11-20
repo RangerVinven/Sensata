@@ -6,6 +6,8 @@ function LineChartComponent(props: any) {
     const [pastSevenDaysTraffic, setPastSevenDaysTraffic] = useState(props.pastSevenDaysTraffic); // The raw past 7 days traffic
     const [weeklyTraffic, setWeeklyTraffic] = useState<Array<WeekDayData> | null>(null) // The formatted traffic from the past 7 days
 
+    const [isLoading, setIsLoading] = useState<Boolean>(true) // The formatted traffic from the past 7 days
+
     type WeekDayData = {
         day: string,
         Traffic: number
@@ -93,45 +95,13 @@ function LineChartComponent(props: any) {
     }
 
     function parseTraffic(traffic: Array<SensorData>) {
-
-        // let trafficPerDay: any = {}
-        //
-        // // Loops over the traffic
-        // for (let i = 0; i < traffic.length; i++) {
-        //     const time_recorded = new Date(traffic[i].time_recorded);
-        //     const time_day = time_recorded.getDay() // Returns 0-6 ("Sunday"-"Saturday")
-        //
-        //     // Adds the day to the trafficPerDay
-        //     if(convertDayToDayName(time_day) in trafficPerDay) {
-        //         trafficPerDay[convertDayToDayName(time_day)] += 1;
-        //     } else {
-        //         trafficPerDay[convertDayToDayName(time_day)] = 1;
-        //     }
-        // }
-        //
-        //
-        // // Adds the remaning days and sets them to 0
-        // // trafficPerDay = addRestOfDaysToArray(trafficPerDay);
-        //
-        // // Turns the traffic into an array of objects
-        // let weeklyActivityArray = [];
-        // for(let key in trafficPerDay) {
-        //     weeklyActivityArray.push({
-        //         day: key,
-        //         "Traffic": trafficPerDay[key]
-        //     })
-        // }
-        //
-        //
-        // const daysOrder = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        // weeklyActivityArray.sort((a: any, b: any) => daysOrder.indexOf(a.day) - daysOrder.indexOf(b.day));
-        //
-        // setWeeklyTraffic(weeklyActivityArray)
-        //
-
-
-
         
+        // If there's no traffic within the last 7 days, return
+       if(traffic.length === 0) {
+           setIsLoading(false)
+           return;
+       }
+
         // Sorts the traffic from earliest to latest
         const sorted_traffic = traffic.sort((a, b) => new Date(a.time_recorded).getTime() - new Date(b.time_recorded).getTime());
        
@@ -186,6 +156,7 @@ function LineChartComponent(props: any) {
         }
 
         setWeeklyTraffic(week_activity);
+        setIsLoading(false)
    }
 
     useEffect(() => {
@@ -193,9 +164,11 @@ function LineChartComponent(props: any) {
     }, [])
 
 
-    if (weeklyTraffic == null) {
-        return <h3>Loading...</h3>
-    } else {
+    if (isLoading) {
+        return <p>Loading...</p>
+    } else if(weeklyTraffic === null) {
+        return <p>No traffic from the past 7 days</p>
+    }else { 
         return <ResponsiveContainer height={"100%"} width={"100%"}>
             <LineChart data={weeklyTraffic}>
                <CartesianGrid />
