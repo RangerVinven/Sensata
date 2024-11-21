@@ -140,7 +140,7 @@ async def list_api_keys(session: SessionDep):
 
 # create api key
 @app.post("/api/v1/admin/create_api_key/{user_id}")
-async def create_api_key(user_id: int, session: SessionDep):
+async def create_api_key_uid(user_id: int, session: SessionDep):
     """
     Create a new api key for a user
 
