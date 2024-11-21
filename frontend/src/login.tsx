@@ -55,7 +55,7 @@ function Login() {
     e.preventDefault();
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
-    setInvalidCredentials("Invalid credentials")        
+    setInvalidCredentials("Invalid credentials");
 
     if (!isEmailValid || !isPasswordValid) {
       return; // Stop form submission if validation fails
@@ -63,23 +63,22 @@ function Login() {
 
     // Sends the login request
     const response = await fetch("https://idp_api.arfff.dog/api/v1/login", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            email: email,
-            password: password
-        })
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+      }),
     });
 
-
     // Checks if the reponse was successful
-    if(!response.ok) {
-        setInvalidCredentials("Invalid credentials")        
+    if (!response.ok) {
+      setInvalidCredentials("Invalid credentials");
     } else {
-        navigate("/dashboard"); // Replace '/dashboard' with your desired route
+      navigate("/dashboard");
     }
 
     // Navigate to another route upon successful login
@@ -121,7 +120,9 @@ function Login() {
           {passwordError && <p className="error-message">{passwordError}</p>}
         </div>
         <button type="submit">Login</button>
-        {invalidCredentials && <p className="error-message">{invalidCredentials}</p>}
+        {invalidCredentials && (
+          <p className="error-message">{invalidCredentials}</p>
+        )}
         <p className="forgot-password" onClick={handleForgotPassword}>
           Forgot password?
         </p>
