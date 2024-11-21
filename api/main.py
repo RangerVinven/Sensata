@@ -52,7 +52,12 @@ app = FastAPI()
 # CORS Config
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        # "http://localhost:5173",
+        # "http://127.0.0.1:5173",
+        "http://idp_web.arfff.dog",
+        "https://idp_web.arfff.dog",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -477,8 +482,9 @@ async def login(
         key="session_token",
         value=str(user_session.session_token),
         samesite="none",
-        httponly=True,
+        # httponly=True,
         secure=True,
+        domain=".arfff.dog",
     )
 
     return {"status": "success"}
