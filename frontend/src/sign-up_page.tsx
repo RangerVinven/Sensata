@@ -1,19 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from "./AuthContext.tsx";
-import './Login.css';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Login.css";
 
 function Login() {
-  const [username, setUsername] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [time, setTime] = useState<string>(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [time, setTime] = useState<string>(
+    new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }),
+  );
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   useEffect(() => {
     const timerId = setInterval(() => {
-      setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setTime(
+        new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+      );
     }, 1000);
 
     return () => clearInterval(timerId);
@@ -21,23 +31,22 @@ function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     try {
-        const response = await fetch('/api/v1/admin/user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: username, password: password })
-          });
+      const response = await fetch("/api/v1/admin/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: username, password: password }),
+      });
 
       if (!response.ok) {
-        throw new Error('Something went wrong');
+        setError("Something went wrong");
       }
 
-      
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (err) {
-      setError('Login failed');
+      setError("Login failed");
     }
   };
 

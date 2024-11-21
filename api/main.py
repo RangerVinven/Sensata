@@ -85,6 +85,25 @@ def get_session():
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
+def is_logged_in(session_token: str, session: Session):
+    """
+    Check if a user is logged in
+    """
+
+    user = session.exec(
+        select(User).where(UserSession.session_token == session_token)
+    ).first()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # return is_logged_in, user_id, is_admin
+    yield {"is_logged_in": True, "user_id": user.user_id, "is_admin": user.is_admin}
+
+
+LoginDep = Annotated[dict, Depends(is_logged_in)]
+
+
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
@@ -304,7 +323,13 @@ async def add_user(user_data: UserCreate, response: Response, session: SessionDe
     session.commit()
     session.refresh(user_session)
 
-    response.set_cookie(key="session_token", value=str(user_session.session_token))
+    response.set_cookie(
+        key="session_token",
+        value=str(user_session.session_token),
+        samesite="none",
+        httponly=True,
+        secure=True,
+    )
 
     return db_user
 
@@ -441,7 +466,13 @@ async def login(
     session.commit()
     session.refresh(user_session)
 
-    response.set_cookie(key="session_token", value=str(user_session.session_token))
+    response.set_cookie(
+        key="session_token",
+        value=str(user_session.session_token),
+        samesite="none",
+        httponly=True,
+        secure=True,
+    )
 
     return {"status": "success"}
 

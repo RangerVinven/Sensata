@@ -29,7 +29,7 @@ function ForgotPassword() {
     console.log("Forgot password form submitted:", { email });
 
     // Navigate to another route upon successful submission
-    navigate("/reset-password"); // Replace '/reset-password' with your desired route
+    navigate("/reset-password");
   };
 
   return (
