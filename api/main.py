@@ -1,4 +1,4 @@
-from typing import Annotated, Union
+from typing import Annotated, Union, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
@@ -85,20 +85,27 @@ def get_session():
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
-def is_logged_in(session_token: str, session: Session):
+async def is_logged_in(session: SessionDep, request: Request) -> Optional[dict]:
     """
     Check if a user is logged in
     """
+
+    # get session token from cookie
+    session_token = request.cookies.get("session_token")
+    if session_token is None:
+        # return {}
+        raise HTTPException(status_code=404, detail="Session token not found")
 
     user = session.exec(
         select(User).where(UserSession.session_token == session_token)
     ).first()
 
     if user is None:
+        # return {}
         raise HTTPException(status_code=404, detail="User not found")
 
     # return is_logged_in, user_id, is_admin
-    yield {"is_logged_in": True, "user_id": user.user_id, "is_admin": user.is_admin}
+    return {"is_logged_in": True, "user_id": user.user_id, "is_admin": user.is_admin}
 
 
 LoginDep = Annotated[dict, Depends(is_logged_in)]
@@ -195,7 +202,7 @@ async def list_groups(session: SessionDep):
 
 # list all sensors
 @app.get("/api/v1/all_sensors")
-async def get_all_sensors(session: SessionDep):
+async def get_all_sensors(session: SessionDep, login: LoginDep):
     """
     Return all sensors
     """
