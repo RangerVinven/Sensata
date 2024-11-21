@@ -52,7 +52,12 @@ app = FastAPI()
 # CORS Config
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        # "http://localhost:5173",
+        # "http://127.0.0.1:5173",
+        "http://idp_web.arfff.dog",
+        "https://idp_web.arfff.dog",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -140,7 +145,7 @@ async def list_api_keys(session: SessionDep):
 
 # create api key
 @app.post("/api/v1/admin/create_api_key/{user_id}")
-async def create_api_key(user_id: int, session: SessionDep):
+async def create_api_key_uid(user_id: int, session: SessionDep):
     """
     Create a new api key for a user
 
@@ -477,8 +482,9 @@ async def login(
         key="session_token",
         value=str(user_session.session_token),
         samesite="none",
-        httponly=True,
+        # httponly=True,
         secure=True,
+        domain=".arfff.dog",
     )
 
     return {"status": "success"}
